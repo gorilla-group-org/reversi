@@ -1,0 +1,190 @@
+{
+  "apps": [
+    {
+      "icon": "https://tic-tac-toe-dev-a4076.web.app/icon_pr/icon_transparent_512.png",
+      "status": "popular",
+      "url_app": "https://www.rustore.ru/catalog/app/gorilla_group.tic_tac_toe",
+      "loc": {
+        "ru": {
+          "name": "Крестики-нолики",
+          "shortDescription": "Классическая игра 3×3 для двух игроков",
+          "installsDescription": "До 1 000 установок"
+        },
+        "en": {
+          "name": "Tic-Tac-Toe",
+          "shortDescription": "Classic 3×3 game for two players",
+          "installsDescription": "Up to 1,000 installs"
+        },
+        "uk": {
+          "name": "Хрестики-нулики",
+          "shortDescription": "Класична гра 3×3 для двох гравців",
+          "installsDescription": "До 1 000 встановлень"
+        },
+        "pl": {
+          "name": "Kółko i krzyżyk",
+          "shortDescription": "Klasyczna gra 3×3 dla dwóch graczy",
+          "installsDescription": "Do 1 000 instalacji"
+        },
+        "ro": {
+          "name": "X și 0",
+          "shortDescription": "Joc clasic 3×3 pentru doi jucători",
+          "installsDescription": "Până la 1 000 de instalări"
+        },
+        "kk": {
+          "name": "Крестиктер мен нөлдер",
+          "shortDescription": "Екі ойыншыға арналған классикалық 3×3 ойын",
+          "installsDescription": "1 000-ға дейін орнату"
+        },
+        "uz": {
+          "name": "X va O",
+          "shortDescription": "Ikki o‘yinchi uchun klassik 3×3 o‘yin",
+          "installsDescription": "1 000 tagacha o‘rnatish"
+        },
+        "az": {
+          "name": "Xaç və sıfır",
+          "shortDescription": "İki oyunçu üçün klassik 3×3 oyun",
+          "installsDescription": "1 000-ə qədər quraşdırma"
+        },
+        "tr": {
+          "name": "XOX",
+          "shortDescription": "İki oyuncu için klasik 3×3 oyun",
+          "installsDescription": "1.000'e kadar yükleme"
+        },
+        "mn": {
+          "name": "Хөлөгт тоглоом",
+          "shortDescription": "Хоёр тоглогчийн сонгодог 3×3 тоглоом",
+          "installsDescription": "1,000 хүртэл суулгалт"
+        },
+        "default": {
+          "name": "Tic-Tac-Toe",
+          "shortDescription": "Classic 3×3 game for two players",
+          "installsDescription": "Up to 1,000 installs"
+        }
+      }
+    },
+    {
+      "icon": "https://tic-tac-toe-dev-a4076.web.app/icon_pr/reversi_icon_512.png",
+      "status": "coming_soon",
+      "url_app": "",
+      "loc": {
+        "ru": {
+          "name": "Реверси",
+          "shortDescription": "Стратегическая настольная игра на переворачивание фишек",
+          "installsDescription": "Скоро в каталоге"
+        },
+        "en": {
+          "name": "Reversi",
+          "shortDescription": "Strategic board game of flipping discs",
+          "installsDescription": "Coming soon"
+        },
+        "uk": {
+          "name": "Реверсі",
+          "shortDescription": "Стратегічна настільна гра з перевертанням фішок",
+          "installsDescription": "Незабаром у каталозі"
+        },
+        "pl": {
+          "name": "Reversi",
+          "shortDescription": "Strategiczna gra planszowa polegająca na odwracaniu pionków",
+          "installsDescription": "Wkrótce w katalogu"
+        },
+        "ro": {
+          "name": "Reversi",
+          "shortDescription": "Joc de strategie în care întorci piesele",
+          "installsDescription": "În curând în catalog"
+        },
+        "kk": {
+          "name": "Реверси",
+          "shortDescription": "Фишкаларды аударуға негізделген стратегиялық үстел ойыны",
+          "installsDescription": "Жақында каталогта"
+        },
+        "uz": {
+          "name": "Reversi",
+          "shortDescription": "Donalarni ag‘darishga asoslangan strategik stol o‘yini",
+          "installsDescription": "Tez orada katalogda"
+        },
+        "az": {
+          "name": "Reversi",
+          "shortDescription": "Daşları çevirməyə əsaslanan strateji stolüstü oyun",
+          "installsDescription": "Tezliklə kataloqda"
+        },
+        "tr": {
+          "name": "Reversi",
+          "shortDescription": "Diskleri çevirmeye dayalı stratejik masa oyunu",
+          "installsDescription": "Yakında katalogda"
+        },
+        "mn": {
+          "name": "Реверси",
+          "shortDescription": "Дискнүүдийг эргүүлэн тоглодог стратегийн ширээний тоглоом",
+          "installsDescription": "Удахгүй каталогт"
+        },
+        "default": {
+          "name": "Reversi",
+          "shortDescription": "Strategic board game of flipping discs",
+          "installsDescription": "Coming soon"
+        }
+      }
+    },
+    {
+      "icon": "https://tic-tac-toe-dev-a4076.web.app/icon_pr/words_icon_512_notext.png",
+      "status": "coming_soon",
+      "url_app": "",
+      "loc": {
+        "ru": {
+          "name": "Слова",
+          "shortDescription": "Составляй слова из букв и набирай очки",
+          "installsDescription": "Скоро в каталоге"
+        },
+        "en": {
+          "name": "Words",
+          "shortDescription": "Form words from letters and score points",
+          "installsDescription": "Coming soon"
+        },
+        "uk": {
+          "name": "Слова",
+          "shortDescription": "Складай слова з літер і набирай очки",
+          "installsDescription": "Незабаром у каталозі"
+        },
+        "pl": {
+          "name": "Słowa",
+          "shortDescription": "Układaj słowa z liter i zdobywaj punkty",
+          "installsDescription": "Wkrótce w katalogu"
+        },
+        "ro": {
+          "name": "Cuvinte",
+          "shortDescription": "Formează cuvinte din litere și câștigă puncte",
+          "installsDescription": "În curând în catalog"
+        },
+        "kk": {
+          "name": "Сөздер",
+          "shortDescription": "Әріптерден сөздер құрап, ұпай жинаңыз",
+          "installsDescription": "Жақында каталогта"
+        },
+        "uz": {
+          "name": "So‘zlar",
+          "shortDescription": "Harflardan so‘zlar tuzing va ochko to‘plang",
+          "installsDescription": "Tez orada katalogda"
+        },
+        "az": {
+          "name": "Sözlər",
+          "shortDescription": "Hərflərdən sözlər düzəldin və xal toplayın",
+          "installsDescription": "Tezliklə kataloqda"
+        },
+        "tr": {
+          "name": "Kelimeler",
+          "shortDescription": "Harflerden kelimeler oluştur ve puan kazan",
+          "installsDescription": "Yakında katalogda"
+        },
+        "mn": {
+          "name": "Үгс",
+          "shortDescription": "Үсгүүдээр үг бүтээж оноо цуглуулаарай",
+          "installsDescription": "Удахгүй каталогт"
+        },
+        "default": {
+          "name": "Words",
+          "shortDescription": "Form words from letters and score points",
+          "installsDescription": "Coming soon"
+        }
+      }
+    }
+  ]
+}

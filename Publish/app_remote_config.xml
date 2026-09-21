@@ -1,0 +1,749 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Пример конфигурации удалённого управления приложением.
+  Скачивается по ссылке, полученной из Remote Config (AppMetrica / Firebase / свой сервер),
+  и разбирается на клиенте.
+
+  version      — версия схемы XML (не версия конфига!), чтобы старые версии приложения
+                 могли понять, что формат изменился, и не падать на новых полях.
+  configId     — уникальный идентификатор конкретной выгрузки конфига (для логов/отладки).
+  generatedAt  — когда конфиг был сформирован на сервере (UTC, ISO 8601).
+  ttlSeconds   — как долго клиент может использовать закешированную копию,
+                 не перезапрашивая файл заново. (3600 - 1 час)
+-->
+<AppRemoteConfig version="1" configId="cfg-2026-09-20-001" generatedAt="2026-09-20T10:00:00Z" ttlSeconds="10800">
+
+  <!-- =========================================================================
+       БЛОК 0. UX-тайминги (Timings)
+
+       Задержки и таймауты приложения, которые можно менять БЕЗ релиза.
+       Все атрибуты ОПЦИОНАЛЬНЫ: если атрибут не задан (или блока нет) —
+       используется дефолт из кода (AppTimings в MauiApp1 / AdDefaults
+       в Gorilla.Ads — там же полные комментарии). Чтобы вернуть дефолт,
+       достаточно удалить атрибут — не нужно помнить, какое значение
+       было «родным».
+
+         bannerDelayMs          — задержка создания баннера после появления
+                                  страницы, мс (дефолт 350). Ждём окончания
+                                  анимации перехода, чтобы тяжёлая инициализация
+                                  BannerAdView не «замораживала» открытие
+                                  страницы (AdBannerManager).
+         appOpenMinBackgroundMs — сколько мс приложение должно пробыть в фоне,
+                                  чтобы при возврате показать App Open
+                                  (дефолт 10000 = 10 сек). Короткие переключения
+                                  рекламу не вызывают (App.xaml.cs).
+         warmupInitialDelayMs   — задержка ПЕРВОГО тика предзагрузки rewarded
+                                  после старта, мс (дефолт 10000 = 10 сек).
+                                  Уводит WebView предзагрузки из окна отрисовки
+                                  первого экрана (AdWarmupManager).
+         aiThinkDelayMinMs      — нижняя граница задержки «думающего» ИИ, мс
+                                  (дефолт 350). Чтобы бот не «телепортировал»
+                                  фигуры (GameViewModel).
+         aiThinkDelayMaxMs      — верхняя граница задержки «думающего» ИИ, мс
+                                   (дефолт 500). Рандомная задержка из этого
+                                   диапазона: [aiThinkDelayMinMs .. MaxMs].
+         bannerRefreshSeconds   — интервал обновления SDK-баннера, сек
+                                   (дефолт 30). Кастомные баннеры кампаний
+                                   (статичные картинки) обновляются по своей
+                                   логике (AdBannerManager).
+        ========================================================================= -->
+  <Timings bannerDelayMs="350"
+           bannerRefreshSeconds="30"
+           appOpenMinBackgroundMs="10000"
+           warmupInitialDelayMs="10000"
+           aiThinkDelayMinMs="350"
+           aiThinkDelayMaxMs="500" />
+
+  <!-- =========================================================================
+       СЕГМЕНТЫ — переиспользуемые наборы условий таргетинга.
+       Задаются один раз здесь, дальше на них ссылаются из AdCampaign/Message
+       через <SegmentRef id="..."/> внутри блока <Targeting>, вместо того
+       чтобы каждый раз копировать одни и те же условия.
+
+       У каждого Segment свой <Conditions logic="AND|OR"> со списком Condition.
+       Условие: field + operator + value.
+
+       Поддерживаемые операторы: Equal, NotEqual, Less, LessOrEqual,
+       Greater, GreaterOrEqual, In (значения через запятую), NotIn.
+
+			Equal - Равно. Для строк — точное совпадение (без регистра), для чисел — числовое равенство
+			NotEqual - Не равно (обратное Equal)
+			Less - Строго меньше (числа)
+			LessOrEqual - Меньше или равно (числа)
+			Greater - Строго больше (числа)
+			In - Значение входит в список (через запятую; пробелы игнорируются, регистр не важен)
+			NotIn -	Значение не входит в список
+
+       Список полей ниже — то, что почти наверняка понадобится в первую
+       очередь. Дальше можно просто добавлять новые Segment с этими же
+       полями или заводить новые field по такому же принципу — формат
+       Condition при этом не меняется.
+
+         AppVersion      — числовая версия приложения (то, что ты назвал "версия")
+         OsVersion       — версия Android (API level), пригодится для
+                            отключения фич/рекламы на старых устройствах
+         Country         — ISO 3166-1 alpha-2 (RU, KZ, ...)
+         Language        — ISO 639-1 (ru, en, ...)
+         Gender          — Male | Female | Unknown
+         AgeGroup        — возрастная группа (0-17, 18-24, 25-34, 35-44, 45-54, 55+);
+                            пусто/не указана — условия по возрасту НЕ совпадают
+                            (кампания не показывается); примеры: seg-adults,
+                            seg-adults_max54 ниже
+         Theme           — тема приложения, как в примере (Classic, ...)
+         Store           — GooglePlay | RuStore | AppGallery — какой конкретно
+                            стор поставил приложение. С учётом того, что у тебя
+                            три разных стора с разными наборами SDK под рекламу,
+                            это поле почти наверняка понадобится очень быстро —
+                            например, чтобы в RuStore-сборке ссылаться только
+                            на Yandex-кампании, а в AppGallery — только на Huawei.
+         IsPremium       — true | false — платящий пользователь. Обычно первое,
+                            что нужно, чтобы не показывать рекламу тем, кто заплатил
+         InstallAgeDays  — сколько дней прошло с установки — удобно для
+                            "новичкам не показывать интерстишлы первые N дней"
+       ========================================================================= -->
+  <Segments>
+
+    <Segment id="seg-app-version-old">
+      <Conditions logic="AND">
+        <Condition field="AppVersion" operator="LessOrEqual" value="2" />
+      </Conditions>
+    </Segment>
+
+    <Segment id="seg-ru-kz">
+      <Conditions logic="AND">
+        <Condition field="Country" operator="In" value="RU,KZ" />
+      </Conditions>
+    </Segment>
+
+    <Segment id="seg-kz">
+      <Conditions logic="AND">
+        <Condition field="Country" operator="Equal" value="KZ" />
+      </Conditions>
+    </Segment>
+
+    <Segment id="seg-ru-lang">
+      <Conditions logic="AND">
+        <Condition field="Language" operator="Equal" value="ru" />
+      </Conditions>
+    </Segment>
+
+    <Segment id="seg-non-ru-lang">
+      <Conditions logic="AND">
+        <Condition field="Language" operator="NotEqual" value="ru" />
+      </Conditions>
+    </Segment>
+
+    <Segment id="seg-classic-theme">
+      <Conditions logic="AND">
+        <Condition field="Theme" operator="Equal" value="Classic" />
+      </Conditions>
+    </Segment>
+
+    <!-- Пример составного сегмента — объединяет несколько условий сразу -->
+    <Segment id="seg-male-ru">
+      <Conditions logic="AND">
+        <Condition field="Gender" operator="Equal" value="Male" />
+        <Condition field="Language" operator="Equal" value="ru" />
+      </Conditions>
+    </Segment>
+
+    <Segment id="seg-rustore-users">
+      <Conditions logic="AND">
+        <Condition field="Store" operator="Equal" value="RuStore" />
+      </Conditions>
+    </Segment>
+
+    <!-- Заготовки на будущее, пока нигде не используются ниже -->
+    <Segment id="seg-non-premium">
+      <Conditions logic="AND">
+        <Condition field="IsPremium" operator="Equal" value="false" />
+      </Conditions>
+    </Segment>
+
+    <Segment id="seg-new-users-7d">
+      <Conditions logic="AND">
+        <Condition field="InstallAgeDays" operator="LessOrEqual" value="7" />
+      </Conditions>
+    </Segment>
+
+    <!-- Исключаем детей -->
+	<Segment id="seg-adults">
+	  <Conditions>
+		<Condition field="AgeGroup" operator="NotEqual" value="0-17" />
+	  </Conditions>
+	</Segment>
+	
+	<!-- 
+		для нескольких групп — operator="In" value="18-24,25-34,35-44" 
+		SettingsViewModel.AgeGroupOptions = ["0-17", "18-24", "25-34", "35-44", "45-54", "55+"]
+	-->
+	<Segment id="seg-adults_max54">
+	  <Conditions>
+		<Condition field="AgeGroup" operator="In" value="18-24,25-34,35-44,45-54" />
+	  </Conditions>
+	</Segment>
+	
+	
+  </Segments>
+
+
+  <!-- =========================================================================
+       БЛОК 1. Рекламные интеграции
+
+       КАК ВЫБИРАЕТСЯ ИСТОЧНИК для каждого формата (Rewarded/Interstitial/
+       Banner/AppOpen):
+         — «СЕТЕВАЯ» реклама — автоматические сети из AdNetworkKillSwitch
+           (блок живёт в app_quick_config.xml, в этом файле его нет).
+           Если включена хотя бы одна сеть, её реклама показывается
+           с приоритетом 5.
+         — СВОИ КАМПАНИИ ниже — дополнение к сетевой: показываются только
+           при enabled="true", совпавшем Targeting и ActivePeriod.
+         — При наложении побеждает БОЛЬШИЙ приоритет (сеть = 5). При
+           равенстве приоритетов остаётся сетевая реклама.
+
+       ВАЖНО про ShowTimes: времена — ГРАНИЦЫ слотов, слоты покрывают все сутки
+       (10:00/13:00/18:00 = слоты 10–13, 13–18 и 18–10 следующего дня),
+       в каждом слоте показ не чаще одного раза. Поэтому кампания активна
+       всегда; «1 раз в слот» соблюдается автоматически.
+
+       ВАЖНО про ad unit ID (AdMob):
+       — в DEBUG-сборке плагин автоматически подставляет ТЕСТОВЫЕ ad unit ID
+         (AdConfig.UseTestAdUnitIds = true), боевые ID не нужны;
+       — в RELEASE-сборке боевые ID задаются атрибутами кампании:
+         rewardedAdUnitId="ca-app-pub-.../..." interstitialAdUnitId="ca-app-pub-.../..."
+         (или значениями по умолчанию в UseAdMob() в коде).
+       ========================================================================= -->
+  <AdCampaigns>
+
+    <AdCampaign id="ru-kz-aug-2026" enabled="false" priority="10">
+
+      <!-- Таргетинг через ссылку на сегмент вместо повторения условий.
+           logic="AND" — если бы тут было несколько SegmentRef/Condition сразу,
+           они бы объединялись по этому правилу. -->
+      <Targeting logic="AND">
+        <SegmentRef id="seg-ru-kz" />
+      </Targeting>
+
+      <!-- Период, в течение которого кампания активна вообще -->
+      <ActivePeriod from="2026-08-01" to="2026-08-31" />
+
+      <!-- Форматы, которые нужно показывать в рамках этого блока. Могут комбинироваться.
+           AppOpen — показывается при возврате приложения из фона (полноэкранная).
+           Боевой ID задаётся атрибутом кампании appOpenAdUnitId (как rewardedAdUnitId).
+           ВНИМАНИЕ: AppOpen работает в рамках ShowTimes этой кампании — если нужно
+           показывать его всегда, вынесите AppOpen в отдельную кампанию без ShowTimes. -->
+      <Formats>
+        <Format>Banner</Format>
+        <Format>Interstitial</Format>
+        <Format>Rewarded</Format>
+        <Format>AppOpen</Format>
+      </Formats>
+
+      <!-- Времена показа в течение дня + часовой пояс, в котором эти времена заданы.
+           в разных регионах будут показывать
+           рекламу в разное локальное время -->
+      <ShowTimes timeZone="Europe/Moscow">
+        <Time>10:00</Time>
+        <Time>13:00</Time>
+        <Time>18:00</Time>
+      </ShowTimes>
+
+      <!-- Ограничение частоты показов — почти всегда нужно на практике,
+           иначе пользователь получит рекламу N раз за один и тот же временной слот.
+           СВОЯ кампания: лимиты задаёте сами. (Правило 50/сутки и 5 минут
+           действует ТОЛЬКО для автоматической сетевой рекламы и зашито в коде.) 
+		   maxPerDay максимально в день — при исчерпании кнопка «+5 монет»
+		   скрывается до следующего дня;
+		   minIntervalMinutes - минимальный интервал минут для ожидания между показами —
+		   кнопка остаётся видимой, а при тапе раньше интервала показывается
+		   подсказка «подождите N мин»;
+		   ShowTimes: «1 показ на слот» — после показа в слоте кнопка скрывается
+		   до начала следующего слота.
+		   -->
+      <FrequencyCap maxPerDay="3" minIntervalMinutes="60" />
+
+      <!-- =====================================================================
+           КАСТОМНЫЕ КРЕАТИВЫ (блок Assets): статичные картинки вместо SDK-рекламы.
+
+           У каждого формата может быть НЕСКОЛЬКО вариантов URL под языки:
+             <BannerUrl lang="ru">…</BannerUrl>       — для конкретного языка;
+             <BannerUrl lang="en,ru">…</BannerUrl>    — список языков через запятую;
+             <BannerUrl lang="">…</BannerUrl>          — «для всех остальных» (запасной).
+           Выбор под язык пользователя: точное совпадение → двухбуквенный код →
+           «для всех остальных» → иначе формата для этого языка НЕТ (формат
+           обслуживается SDK). Важно: варианты только под часть языков БЕЗ
+           запасного lang="" НЕ делают формат кастомным для остальных языков —
+           для них показывается обычная SDK-реклама. Язык берётся из настроек
+           приложения.
+
+           URL ПЕРЕХОДА ПО ТАПУ (опционально): рядом с картинкой можно задать
+           ссылку, которую приложение откроет в браузере при нажатии на креатив:
+             <BannerClickUrl lang="ru">https://t.me/gorilla_group/9</BannerClickUrl>
+           Работает так же (несколько вариантов под языки, lang="" — запасной).
+           Не задано = креатив не кликабелен. Если задано — поверх баннера
+           рисуется СТАТИЧНАЯ иконка-подсказка (link_48.png в тёмном кружке,
+           без анимации — бесконечная анимация роняла отрисовку баннера
+           на эмуляторе без GPU, см. CustomAdPresenter.CreateClickHint).
+
+           Аналогично для полноэкранных форматов:
+             <InterstitialClickUrl> — открывается при закрытии interstitial
+               (тап/крестик после 5 сек);
+             <RewardedClickUrl> — открывается по тапу на картинке rewarded
+               или по кнопке «Перейти» (награда при этом начисляется).
+
+           ПОВЕДЕНИЕ:
+           — Banner: картинка максимальной ширины 320 dp (как стандартный
+             320-баннер), по центру внизу страницы, ВЫСОТА ПОДСТРАИВАЕТСЯ
+             под пропорции картинки (без обрезки); вместо SDK-баннера
+             (SDK-баннер при активном креативе не создаётся); по тапу на баннере
+             открывается BannerClickUrl (если задан) — при этом в правом верхнем
+             углу рисуется статичная иконка-подсказка link_48.png;
+           — Interstitial: полноэкранная картинка минимум 5 секунд, затем закрытие
+             по тапу/крестику; при закрытии открывается InterstitialClickUrl (если задан);           
+		   — Rewarded: полноэкранная картинка + полупрозрачная кнопка «Перейти»
+             с чёрным бордером (активна через 5 секунд); во время отсчёта в правом
+             верхнем углу — счётчик 5-4-3-2-1, по завершении он исчезает и на ЕГО
+             МЕСТЕ появляется крестик закрытия (иконка x_48.png);
+             ПОСЛЕ отсчёта (5 сек) награда начисляется любым способом закрытия:
+             кнопка «Перейти», тап по картинке или крестик (ролик досмотрен;
+             как у SDK-роликов, где закрытие после просмотра не отменяет награду);
+             по тапу на картинке или по кнопке «Перейти» открывается RewardedClickUrl
+             (если задан) — переход на внешний ресурс ЗАКРЫВАЕТ оверлей автоматически
+             и награда начисляется; до конца отсчёта награда не начисляется;
+           — картинка качается ОДИН раз и кэшируется на устройстве (повторные
+             и офлайн-показы мгновенные); при битом URL/отсутствии сети —
+             показывается обычная SDK-реклама (fallback);
+           — пустые элементы = формат обслуживается стандартным SDK
+             (Yandex/AdMob/HMS), а не кастомным креативом.
+           ===================================================================== -->
+      <Assets>
+        <BannerUrl lang="">https://example.com/creatives/2026-08/banner_default.png</BannerUrl>
+        <BannerUrl lang="ru">https://example.com/creatives/2026-08/banner_ru.png</BannerUrl>
+        <!-- URL перехода по тапу на баннере (открывается в браузере). Не задано = не кликабелен -->
+        <BannerClickUrl lang="">https://t.me/gorilla_group/9</BannerClickUrl>
+        <InterstitialUrl lang="">https://example.com/creatives/2026-08/interstitial_default.png</InterstitialUrl>
+        <RewardedUrl lang="">https://example.com/creatives/2026-08/rewarded_default.png</RewardedUrl>
+      </Assets>
+
+    </AdCampaign>
+
+    <AdCampaign id="kz-only-promo" enabled="false" priority="5">
+      <Targeting logic="AND">
+        <SegmentRef id="seg-kz" />
+      </Targeting>
+      <ActivePeriod from="2026-08-10" to="2026-08-20" />
+      <Formats>
+        <Format>Banner</Format>
+      </Formats>
+      <ShowTimes timeZone="Asia/Almaty">
+        <Time>12:00</Time>
+      </ShowTimes>
+      <FrequencyCap maxPerDay="1" minIntervalMinutes="0" />
+      <!-- Кастомный баннер-креатив под язык (пример): для казахскоязычных —
+           свой баннер, для остальных — вариант lang="" (запасной).
+           BannerClickUrl — ссылка, открываемая по тапу на баннере. -->
+      <Assets>
+        <BannerUrl lang="kk">https://example.com/creatives/2026-08/banner_kk.png</BannerUrl>
+        <BannerUrl lang="">https://example.com/creatives/2026-08/banner_kz.png</BannerUrl>
+        <BannerClickUrl lang="">https://example.com/landing</BannerClickUrl>
+      </Assets>
+    </AdCampaign>
+
+	<AdCampaign id="promo" enabled="false" priority="10">
+	  <Formats>
+		<Format>Banner</Format>
+		<Format>Interstitial</Format>
+		<Format>Rewarded</Format>
+	  </Formats>
+	  <ActivePeriod from="2026-08-12" to="2026-08-13" />
+      <ShowTimes timeZone="Europe/Moscow">
+	    <!-- 
+		убрать <ShowTimes> из promo целиком (тогда «1 раз в слот» не действует — кнопка всегда видна,
+		работают только minIntervalMinutes=3 и maxPerDay=10), или добавить 2-3 времени (10:00, 15:00,
+		20:00) — слоты станут по 5 часов, а не сутки;
+		<Time>19:00</Time>
+		-->
+      </ShowTimes>
+      <FrequencyCap maxPerDay="100" minIntervalMinutes="1" />
+	  <Assets>
+		<BannerUrl lang="ru">https://tic-tac-toe-dev-a4076.web.app/baner_tg_ru.png</BannerUrl>
+		<BannerUrl lang="">https://tic-tac-toe-dev-a4076.web.app/baner_tg_ru.png</BannerUrl>
+		<!-- По тапу на баннере открывается эта ссылка в браузере -->
+		<BannerClickUrl lang="ru">https://t.me/gorilla_group/9</BannerClickUrl>
+		<BannerClickUrl lang="">https://t.me/gorilla_group/9</BannerClickUrl>
+		<InterstitialUrl lang="ru">https://tic-tac-toe-dev-a4076.web.app/Interstitial_tg_ru.png</InterstitialUrl>
+		<!-- По закрытию interstitial (тап/крестик после 5 сек) открывается эта ссылка -->
+		<InterstitialClickUrl lang="ru">https://t.me/gorilla_group/9</InterstitialClickUrl>
+		<RewardedUrl lang="ru">https://tic-tac-toe-dev-a4076.web.app/Interstitial_tg_ru.png</RewardedUrl>
+		<!-- По тапу на картинке или кнопке «Перейти» в rewarded открывается эта ссылка -->
+		<RewardedClickUrl lang="ru">https://t.me/gorilla_group/9</RewardedClickUrl>
+	  </Assets>
+	</AdCampaign>
+	
+	<!-- Тестовая акция (testOnly="true"): показывается ТОЛЬКО устройствам из
+	     блока AdsTestDevices (тестерам) — остальные кампанию не видят вовсе.
+	     Обкатали на тестовом устройстве → убрали testOnly → акция пошла всем. -->
+	<AdCampaign id="promo_t01" enabled="false" priority="10" testOnly="false">
+	  <Formats>
+		<Format>Banner</Format>
+		<Format>Interstitial</Format>
+		<Format>Rewarded</Format>
+	  </Formats>
+	  <ActivePeriod from="2026-09-01" to="2026-09-20" />
+      <ShowTimes timeZone="Europe/Moscow">
+	    <!-- 
+		убрать <ShowTimes> из promo целиком (тогда «1 раз в слот» не действует — кнопка всегда видна,
+		работают только minIntervalMinutes=3 и maxPerDay=10), или добавить 2-3 времени (10:00, 15:00,
+		20:00) — слоты станут по 5 часов, а не сутки;
+		<Time>19:00</Time>
+		-->
+      </ShowTimes>
+	  <!-- Исключаем детей -->
+	  <Targeting logic="AND">
+        <SegmentRef id="seg-adults" />
+      </Targeting>
+      <FrequencyCap maxPerDay="500" minIntervalMinutes="3" />
+	  <Assets>
+		<!-- СТРОГОЕ поведение под языки (без запасного lang=""):
+		     баннер — только для kk/en; interstitial/rewarded — только для ru;
+		     для остальных языков формата нет → обычная SDK-реклама. -->
+		<BannerUrl lang="kk">https://tic-tac-toe-dev-a4076.web.app/baner_tg_ru.png</BannerUrl>
+		<BannerUrl lang="en">https://tic-tac-toe-dev-a4076.web.app/baner_tg_ru.png</BannerUrl>
+		<!-- По тапу на баннере открывается эта ссылка в браузере -->
+		<BannerClickUrl lang="kk">https://t.me/gorilla_group/9</BannerClickUrl>
+		<BannerClickUrl lang="en">https://t.me/gorilla_group/9</BannerClickUrl>
+		<InterstitialUrl lang="en">https://tic-tac-toe-dev-a4076.web.app/Interstitial_tg_ru.png</InterstitialUrl>
+		<!-- По закрытию interstitial (тап/крестик после 5 сек) открывается эта ссылка -->
+		<InterstitialClickUrl lang="en">https://t.me/gorilla_group/9</InterstitialClickUrl>
+		<RewardedUrl lang="en">https://tic-tac-toe-dev-a4076.web.app/Interstitial_tg_ru.png</RewardedUrl>
+		<!-- По тапу на картинке или кнопке «Перейти» в rewarded открывается эта ссылка -->
+		<RewardedClickUrl lang="en">https://t.me/gorilla_group/9</RewardedClickUrl>
+	  </Assets>
+	</AdCampaign>
+	
+  </AdCampaigns>
+
+
+  <!-- =========================================================================
+       БЛОК 1.5. Лимиты кэша кастомных креативов (AdCampaign → Assets)
+       Меняются БЕЗ релиза: правка атрибутов здесь (и на сервере) применяется
+       после перезагрузки конфига.
+
+         maxBytes   — максимальный суммарный объём кэша картинок, байт
+                      (по умолчанию 50 МБ = 52428800);
+         maxFiles   — максимальное число файлов в кэше (по умолчанию 200);
+         maxAgeDays — сколько дней хранить креатив без использования: файлы
+                      старше удаляются при выходе из приложения (и при старте),
+                      чтобы кэш не занимал место на устройстве навсегда
+                      (по умолчанию 30).
+
+       При превышении maxBytes/maxFiles удаляются САМЫЕ СТАРЫЕ по дате
+       последнего использования файлы. Блок отсутствует (или атрибут пуст) =
+       используются дефолты из кода.
+       ========================================================================= -->
+  <AdCacheLimit maxBytes="52428800" maxFiles="50" maxAgeDays="3" />
+
+
+  <!-- =========================================================================
+       БЛОК 2. Текстовые сообщения / уведомления
+       Таргетинг задаётся через <Targeting logic="AND|OR">, внутри которого
+       может быть любая комбинация <SegmentRef id="..."/> (ссылка на готовый
+       сегмент из блока Segments выше) и <Condition .../> (разовое условие
+       прямо здесь, если заводить отдельный Segment ради одного использования
+       не имеет смысла). Все элементы внутри Targeting объединяются одним
+       и тем же logic — вложенных AND-внутри-OR тут намеренно нет, чтобы
+       не усложнять — для сложных случаев проще завести под это отдельный Segment.
+
+       ТЕКСТ под язык пользователя задаётся вариантами <Text lang="...">:
+         lang="en,ru" — список языков через запятую (этим языкам — этот текст);
+         lang="kk" — отдельный текст для одного языка;
+         lang="" (или без атрибута lang) — «для всех остальных» (запасной вариант).
+       Выбор варианта: точное совпадение культуры → двухбуквенный код →
+       «для всех остальных» → первый в порядке файла.
+
+       Поле Store в условиях/сегментах разделяет сообщения по магазинам, из
+       которых установлено приложение (GooglePlay / RuStore / AppGallery —
+       значение задаётся в AppConfig.Store).
+       displayType: Popup | Banner | Toast.
+       showOnce="true" — показать один раз за всё время (ключ: Id + версия
+       приложения; в новой версии может показаться снова).
+       showOnce="false" — показывать повторно. Своя периодичность повтора
+       задаётся атрибутом repeatIntervalMinutes="N": не чаще раза в N минут
+       с последнего показа ЭТОГО сообщения. Без атрибута (0) — без ограничения
+       повтора (действует только общий интервал MessageLimits ниже).
+       <Action type="Update" /> — кнопка «Обновить» в попапе, открывает ссылку
+       магазина из ForceUpdate.StoreLinks под текущий магазин (AppConfig.Store);
+       <Action type="OpenLink" url="..." /> — открывает произвольную ссылку.
+	   
+	   showOnce — это флаг «показать сообщение только один раз»
+       ========================================================================= -->
+  <Messages>
+
+    <!-- Просто ссылка на готовый сегмент -->
+    <Message id="msg-please-update" enabled="false" priority="10" displayType="Popup" showOnce="true">
+      <Text lang="en,ru">Пожалуйста, обновите приложение до последней версии</Text>
+      <Text lang="kk">Қосымшаны соңғы нұсқаға жаңартыңыз</Text>
+      <Text lang="">Please update the app to the latest version</Text>
+      <!-- Кнопка «Обновить»: открывает ссылку магазина (ForceUpdate.StoreLinks
+           под AppConfig.Store) — Play/RuStore/AppGallery страницу приложения -->
+      <Action type="Update" />
+      <Targeting logic="AND">
+        <SegmentRef id="seg-app-version-old" />
+      </Targeting>
+    </Message>
+
+    <!-- Составной сегмент целиком описан один раз в Segments и переиспользуется -->
+    <Message id="msg-male-promo" enabled="false" priority="5" displayType="Banner" showOnce="false" repeatIntervalMinutes="60">
+      <Text lang="ru">Специальное предложение для тебя</Text>
+      <Text lang="">Special offer for you</Text>
+      <Targeting logic="AND">
+        <SegmentRef id="seg-male-ru" />
+      </Targeting>
+    </Message>
+
+    <!-- Комбинация двух независимых сегментов прямо в Targeting (Toast - снизу появляется некое сообщение и само исчезает)-->
+    <Message id="msg-non-ru-classic11" enabled="false" priority="1" displayType="Toast" showOnce="true">
+      <Text lang="">Try the classic theme 1</Text>
+      <Targeting logic="AND">
+        <SegmentRef id="seg-non-ru-lang" />
+        <SegmentRef id="seg-classic-theme" />
+      </Targeting>
+    </Message>
+
+    <!-- Комбинация двух независимых сегментов прямо в Targeting ( Banner сверху сообщение с кнопкой закрыть)-->
+    <Message id="msg-non-ru-classic22" enabled="false" priority="2" displayType="Banner" showOnce="true">
+      <Text lang="">Try the classic theme 2 </Text>
+      <Targeting logic="AND">
+        <SegmentRef id="seg-non-ru-lang" />
+        <SegmentRef id="seg-classic-theme" />
+      </Targeting>
+    </Message>
+	
+	<!-- Комбинация двух независимых сегментов прямо в Targeting (Popup - окно с кнопкой закрыть) -->
+    <Message id="msg-non-ru-classic31" enabled="false" priority="3" displayType="Popup" showOnce="true">
+      <Text lang="">Try the classic theme 3</Text>
+      <Targeting logic="AND">
+        <SegmentRef id="seg-non-ru-lang" />
+        <SegmentRef id="seg-classic-theme" />
+      </Targeting>
+    </Message>
+	
+	
+    <!-- Пример смешивания сегмента с разовым локальным условием,
+         которое заводить отдельным Segment пока не имеет смысла -->
+    <Message id="msg-rustore-old-version" enabled="false" priority="8" displayType="Popup" showOnce="true">
+      <Text lang="ru">Обновите приложение из RuStore, чтобы реклама продолжала работать</Text>
+      <Text lang="">Update the app from RuStore to keep ads working</Text>
+      <Targeting logic="AND">
+        <SegmentRef id="seg-rustore-users" />
+        <Condition field="AppVersion" operator="LessOrEqual" value="4" />
+      </Targeting>
+    </Message>
+
+  </Messages>
+
+  <!-- =========================================================================
+       БЛОК 2.5. Общие лимиты показа текстовых сообщений (MessageLimits)
+
+       minIntervalMinutes — минимальный интервал между показами ЛЮБЫХ текстовых
+       сообщений (блок Messages), минуты. 0 = без ограничения (пачка сообщений
+       показывается подряд). Блок отсутствует / атрибут не задан = дефолт из
+       кода (30 минут). Индивидуальная периодичность конкретного сообщения
+       задаётся на самом сообщении (repeatIntervalMinutes при showOnce="false").
+
+       maxPerDay — максимум показанных текстовых сообщений в сутки.
+       0 = без ограничения. Блок отсутствует / атрибут не задан = дефолт
+       из кода (3).
+       ========================================================================= -->
+  <MessageLimits minIntervalMinutes="0" maxPerDay="30" />
+
+
+  <!-- =========================================================================
+       БЛОК 3. Отключение рекламы навсегда
+       Список идентификаторов устройств/пользователей (GUID), которым реклама
+       не показывается ни при каких условиях, независимо от AdCampaigns выше.
+       ========================================================================= -->
+  <AdsDisabledForever>
+    <DeviceId></DeviceId>
+  </AdsDisabledForever>
+  <!-- =========================================================================
+       БЛОК 4. Дать возможность тестировать
+       Список идентификаторов устройств/пользователей (GUID), которым сразу при выйгрыше у другого игрока даём 2000 монет.
+       ========================================================================= 
+	   	
+  -->
+  <Ads2000Coin>
+  	   	<DeviceId></DeviceId>
+  </Ads2000Coin>
+
+  <!-- =========================================================================
+       ДОПОЛНИТЕЛЬНЫЕ БЛОКИ — заготовки на будущее.
+       Не обязательно реализовывать все сразу на клиенте, но структуру
+       стоит зарезервировать сейчас, чтобы не переделывать формат конфига позже.
+       ========================================================================= -->
+
+  <!-- Фича-флаги — включение/выключение функций приложения без релиза.
+       СЕМАНТИКА (единая для всех флагов): флаг НЕ задан в конфиге = функция
+       ВКЛЮЧЕНА по умолчанию (отсутствие флага не отключает ничего случайно);
+       флаг задан и enabled="false" = функция выключена; enabled="true" = включена.
+
+       Рекламные рубильники (проверяются в ConfigService / NetworkAdRouter):
+         AD     — «вся реклама»: главный рубильник. enabled="false" — реклама
+                   выключена ПОЛНОСТЬЮ (все форматы: rewarded, interstitial,
+                   banner, app open — и сети, и свои кампании).
+         AutoAD — «автоматическая реклама»: enabled="false" — сетевая реклама
+                   (AdNetworkKillSwitch) не показывается, СВОИ кампании
+                   (AdCampaigns) остаются работать.
+         Btn5   — «кнопка +5»: enabled="false" — rewarded недоступен полностью,
+                   кнопка «+5 монет» скрыта на всех страницах.
+  -->
+  <FeatureFlags>
+    <!-- автоматическая реклама (сеть) -->
+    <Flag name="AutoAD" enabled="true" />
+	<!-- вся реклама -->
+    <Flag name="AD" enabled="true" />
+	<!-- кнопка +5 -->
+    <Flag name="Btn5" enabled="true" />
+
+  </FeatureFlags>
+
+  <!-- =========================================================================
+       БЛОК 4.5. Тестовые устройства (AdsTestDevices)
+
+       Список GUID устройств для ТЕСТИРОВАНИЯ рекламы. Используется в двух местах:
+
+       1) КАСТОМНЫЕ КРЕАТИВЫ (AdCampaign → Assets): если список НЕ пуст — свои
+          картинки (BannerUrl/InterstitialUrl/RewardedUrl) показываются ТОЛЬКО
+          перечисленным устройствам (тестерам); остальные получают обычную
+          SDK-рекламу (проверка IsCustomCreativeAllowed в NetworkAdRouter).
+
+       2) ТЕСТОВЫЕ КАМПАНИИ (атрибут testOnly="true" на AdCampaign): кампания
+          показывается ТОЛЬКО перечисленным здесь устройствам, остальным — не
+          показывается вовсе (проверка AdTestCampaignGuard в ConfigService).
+          Так конкретную акцию можно обкатать на одном устройстве до массового
+          запуска: пометил кампанию testOnly="true" → проверил на тестере →
+          убрал атрибут → кампания пошла всем.
+
+       ВАЖНО: пустой список / отсутствие блока = тестовых устройств нет.
+       Креативы тогда показываются всем (ограничение №1 не действует),
+       а тестовые кампании (testOnly="true") — НИКОМУ (безопасное поведение:
+       акция не должна случайно «уйти в массы» без заполненного списка тестеров).
+       ========================================================================= -->
+  <AdsTestDevices>
+    <DeviceId></DeviceId>
+  </AdsTestDevices>
+
+  <!-- Принудительное обновление приложения -->
+  <ForceUpdate>
+    <MinSupportedVersion>3</MinSupportedVersion>
+    <RecommendedVersion>5</RecommendedVersion>
+    <ForceBlock>false</ForceBlock>
+    <StoreLinks>
+      <StoreLink store="GooglePlay"></StoreLink>
+      <StoreLink store="RuStore"></StoreLink>
+      <StoreLink store="AppGallery"></StoreLink>
+    </StoreLinks>
+  </ForceUpdate>
+
+
+  <!-- Внешние ссылки, которые тоже полезно уметь менять без релиза 
+		TermsOfUse - Условия использования
+  -->
+  <RemoteLinks>
+    <Link name="ReviewRuStore"></Link>
+    <Link name="PrivacyPolicy"></Link>
+    <Link name="TermsOfUse"></Link>
+    <Link name="Support"></Link>
+    <Link name="Telegram">https://t.me/gorilla_group/17</Link>
+	<Link name="VK">https://vk.ru/gorilla_group.development</Link>
+	<Link name="VK_Video"></Link>
+	<Link name="Youtube"></Link>
+  </RemoteLinks>
+
+  <!-- A/B-эксперименты — распределение пользователей по группам по весам (сумма = 100) -->
+  <Experiments>
+    <Experiment id="onboarding_v2" enabled="false">
+      <Group name="A" weight="50" />
+      <Group name="B" weight="50" />
+    </Experiment>
+  </Experiments>
+
+<ThemeImages>
+  <Theme name="Classic"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Classic_1.jpg"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Classic_2.jpg"/>
+  <Theme name="Ocean"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Ocean_1.jpg"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Ocean_2.jpg"/>
+  <Theme name="Forest"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Forest_1.jpg"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Forest_2.jpg"/>
+  <Theme name="Neon"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Neon_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Neon_2.png"/>
+  <Theme name="Cyber Red"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Cyber Red_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Cyber Red_2.png"/>
+  <Theme name="Graphite"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Graphite_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Graphite_2.png"/>
+  <Theme name="Nature"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Nature_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Nature_2.png"/>
+  <Theme name="Royal Gold"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Royal Gold_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Royal Gold_2.png"/>
+  <Theme name="Sakura"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Sakura_1.jpg"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Sakura_2.jpg"/>
+  <Theme name="Lavender"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Lavender_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Lavender_2.png"/>
+  <Theme name="Mint Calm"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Mint Calm_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Mint Calm_2.png"/>
+  <Theme name="Rose Gold"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Rose Gold_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Rose Gold_2.png"/>
+  <Theme name="DarkForest"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/DarkForest_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/DarkForest_2.png"/>
+  <Theme name="New Year"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/New Year_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/New Year_2.png"/>
+  <Theme name="Halloween"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Halloween_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Halloween_2.png"/>
+  <Theme name="Valentine"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Valentine_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Valentine_2.png"/>
+  <Theme name="Lucky Clover"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Lucky Clover_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Lucky Clover_2.png"/>
+  <Theme name="Easter"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Easter_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Easter_2.png"/>
+  <Theme name="Thanksgiving"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Thanksgiving_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Thanksgiving_2.png"/>
+  <Theme name="Summer"
+          phoneUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Summer_1.png"
+          tabletUrl="https://tic-tac-toe-dev-a4076.web.app/Fons/Summer_2.png"/>
+</ThemeImages>
+
+
+  <!-- Внешние ссылки, на файлы приложений 
+	может список расширяться
+  -->
+  <AppLinks>
+    <Link name="GooglePlay">https://tic-tac-toe-dev-a4076.web.app/apps_catalog.GooglePlay.json</Link>
+    <Link name="RuStore">https://tic-tac-toe-dev-a4076.web.app/apps_catalog.RuStore.json</Link>
+    <Link name="AppGallery">https://tic-tac-toe-dev-a4076.web.app/apps_catalog.AppGallery.json</Link>
+  </AppLinks>  
+
+  <PromoCodes>
+    <Promo hash="E5024FF8877CE8066E668DED1EC5D5D11E00BD2C62546CF19E6B4B3020F6473C" coins="3000" expiresAt="2026-09-30T23:59:59Z" />
+	<Promo hash="7B574F0FF58FDC7E980B2E0EB2FB86CF833085D0DB07B36371EF7FB29810EE01" coins="1000" expiresAt="2026-09-30T23:59:59Z" />	
+  </PromoCodes>
+  
+</AppRemoteConfig>

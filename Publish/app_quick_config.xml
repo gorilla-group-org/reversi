@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Лёгкий конфиг для частых проверок — в отличие от app_remote_config.xml
+  (тяжёлого, с кампаниями/сегментами/сообщениями), этот файл маленький
+  и предназначен для того, чтобы приложение могло дёргать его часто
+  (например, при каждом запуске или раз в N минут), не тратя трафик
+  и время на загрузку и разбор полного конфига.
+
+  checkedAt — когда этот файл был сформирован на сервере (UTC, ISO 8601),
+              удобно для логов и отладки рассинхрона времени.
+-->
+<QuickConfig version="1" checkedAt="2026-09-20T10:00:00Z">
+
+  <!-- Kill-switch по рекламным сетям — быстро отключить конкретного провайдера
+       (например, если Yandex/AdMob/HMS начали массово падать или банить).
+
+       СЕМАНТИКА: включённые сети — это «автоматическая» реклама с приоритетом 5.
+       Свои кампании из app_remote_config.xml (AdCampaigns, enabled="true") —
+       дополнение к ней: показываются в промежутках, а при наложении побеждает
+       больший приоритет (сеть = 5). При равенстве приоритетов остаётся сеть.
+       Сеть, не упомянутая в блоке, считается активной; блок отсутствует = все
+       активны. Значения этого файла перекрывают блок из remote-конфига.
+
+       АТРИБУТЫ блока — лимиты АВТОМАТИЧЕСКОЙ рекламы (Yandex/AdMob/Huawei):
+       maxPerDay — максимум показов в сутки;
+       minIntervalMinutes — минимальный интервал между показами (минуты).
+       Если атрибуты не заданы — дефолт из кода (50 в сутки, 5 минут).
+       Свои кампании этими лимитами НЕ ограничиваются (у них свой FrequencyCap).
+
+       АТРИБУТЫ <Network> — БОЕВЫЕ ad unit ID сети (для Яндекса — вида
+       R-M-XXXXX-YY, свои на каждый формат):
+       rewardedAdUnitId / interstitialAdUnitId / bannerAdUnitId / appOpenAdUnitId.
+       Позволяют менять боевые ID без релиза. Если ID не задан — в DEBUG
+       подставляется тестовый (демо-)ID, в Release реклама молча не грузится.
+
+       ПРИОРИТЕТ СЕТЕЙ (когда включено несколько): сейчас жёстко Yandex → AdMob
+       (в коде, NetworkAdRouter). Если нужен другой порядок — скажи, добавим
+       атрибут priority у <Network>.
+	   
+	       <Network name="Yandex" enabled="true"
+             rewardedAdUnitId="R-M-19737078-2" - реклама с вознаграждением
+             interstitialAdUnitId="R-M-19737078-3" - полноэкранная реклама - межстраничная реклама
+             bannerAdUnitId="R-M-19737078-1" - банер 
+             appOpenAdUnitId="R-M-19737078-4" - реклама при открытии приложения
+			 />
+       -->
+  <AdNetworkKillSwitch maxPerDay="300" minIntervalMinutes="3">
+	<Network name="Yandex" enabled="true"
+             rewardedAdUnitId="R-M-20085826-2"
+             interstitialAdUnitId="R-M-20085826-3"
+             bannerAdUnitId="R-M-20085826-1"
+             appOpenAdUnitId="R-M-20085826-4" />
+    <Network name="AdMob" enabled="false" />
+    <Network name="Huawei" enabled="false" />
+  </AdNetworkKillSwitch>
+
+  <!-- Режим техобслуживания. Здесь — упрощённая версия без расписания:
+       раз файл и так проверяется часто, планировать окно заранее
+       (как в тяжёлом конфиге) не обязательно — можно просто включить/
+       выключить вручную в нужный момент. -->
+<Maintenance enabled="false">
+    <Text lang="ru">Ведутся технические работы, попробуйте зайти позже.</Text>
+    <Text lang="en">Technical work is underway, please try again later.</Text>
+    <Text lang="uk">Ведуться технічні роботи, спробуйте зайти пізніше.</Text>
+    <Text lang="pl">Trwają prace techniczne, spróbuj ponownie później.</Text>
+    <Text lang="ro">Se efectuează lucrări tehnice, vă rugăm să încercați din nou mai târziu.</Text>
+    <Text lang="kk">Техникалық жұмыстар жүргізілуде, кейінірек қайта кіріп көріңіз.</Text>
+    <Text lang="uz">Texnik ishlar olib borilmoqda, keyinroq qayta urinib ko‘ring.</Text>
+    <Text lang="az">Texniki işlər aparılır, zəhmət olmasa, daha sonra yenidən cəhd edin.</Text>
+    <Text lang="tr">Teknik çalışmalar devam ediyor, lütfen daha sonra tekrar deneyin.</Text>
+    <Text lang="mn">Техникийн ажил явагдаж байна, дараа дахин оролдоно уу.</Text>
+    <Text lang="ar">تجري حاليًا أعمال صيانة فنية، يرجى المحاولة مرة أخرى لاحقًا.</Text>
+    <Text lang="bg">Извършват се технически работи, моля, опитайте отново по-късно.</Text>
+    <Text lang="hu">Technikai munkálatok zajlanak, kérjük, próbálja meg később.</Text>
+    <Text lang="el">Εκτελούνται τεχνικές εργασίες, παρακαλούμε δοκιμάστε ξανά αργότερα.</Text>
+    <Text lang="da">Der udføres teknisk vedligeholdelse. Prøv igen senere.</Text>
+    <Text lang="he">מתבצעות עבודות תחזוקה טכניות, נסו שוב מאוחר יותר.</Text>
+    <Text lang="is">Tæknivinna stendur yfir, vinsamlegast reynið aftur síðar.</Text>
+    <Text lang="es">Se están realizando trabajos técnicos, inténtalo de nuevo más tarde.</Text>
+    <Text lang="it">Sono in corso lavori tecnici, riprova più tardi.</Text>
+    <Text lang="ca">S'estan realitzant treballs tècnics, torna-ho a provar més tard.</Text>
+    <Text lang="ko">현재 기술 작업이 진행 중입니다. 나중에 다시 시도해 주세요.</Text>
+    <Text lang="de">Es werden derzeit technische Arbeiten durchgeführt. Bitte versuchen Sie es später erneut.</Text>
+    <Text lang="nl">Er worden technische werkzaamheden uitgevoerd. Probeer het later opnieuw.</Text>
+    <Text lang="no">Det pågår teknisk vedlikehold. Prøv igjen senere.</Text>
+    <Text lang="pt-BR">Estamos realizando trabalhos técnicos. Tente novamente mais tarde.</Text>
+    <Text lang="pt-PT">Estão a decorrer trabalhos técnicos. Tente novamente mais tarde.</Text>
+    <Text lang="sk">Prebiehajú technické práce, skúste to znova neskôr.</Text>
+    <Text lang="fi">Teknisiä töitä on käynnissä. Yritä myöhemmin uudelleen.</Text>
+    <Text lang="fr">Des travaux techniques sont en cours. Veuillez réessayer plus tard.</Text>
+    <Text lang="hi">तकनीकी कार्य चल रहा है, कृपया बाद में पुनः प्रयास करें।</Text>
+    <Text lang="cs">Probíhá technická údržba, zkuste to prosím později.</Text>
+    <Text lang="sv">Tekniskt underhåll pågår. Försök igen senare.</Text>
+    <Text lang="ja">現在、メンテナンス作業を行っています。しばらくしてからもう一度お試しください。</Text>
+    <Text lang="vi">Hệ thống đang được bảo trì, vui lòng thử lại sau.</Text>
+    <Text lang="id">Sedang dilakukan pemeliharaan teknis, silakan coba lagi nanti.</Text>
+    <Text lang="zh">正在进行技术维护，请稍后再试。</Text>
+    <Text lang="th">กำลังดำเนินการบำรุงรักษาทางเทคนิค โปรดลองอีกครั้งในภายหลัง</Text>
+</Maintenance>
+
+  <!-- Признак: нужно ли клиенту скачать и перечитать основной (тяжёлый) конфиг.
+       mainConfigId — id актуальной версии тяжёлого конфига (совпадает
+       с configId в app_remote_config.xml). Клиент сравнивает его
+       со своим закешированным id: если отличается — значит, есть новая
+       версия, и старую пора обновить. Это надёжнее, чем просто true/false,
+       потому что не зависит от того, не забыли ли на сервере сбросить
+       флаг обратно после обновления.
+       forceRefresh — аварийный ручной флаг поверх сравнения id, на случай
+       если нужно заставить клиентов перекачать конфиг прямо сейчас,
+       даже если по какой-то причине id не поменялся. -->
+  <MainConfig mainConfigId="cfg-2026-09-20-001" forceRefresh="false" />
+
+</QuickConfig>
